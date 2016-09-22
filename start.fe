@@ -1,0 +1,169 @@
+gravity_constant 0
+
+PARAMETER volumen = 1000		// objêtoœæ
+PARAMETER gamma = 1
+
+PARAMETER AAx = volumen^(1/3)*5			// d³ugoœæ podstawy na osi x
+PARAMETER AAy = volumen^(1/3)*2			// d³ugoœæ podstawy na osi y
+
+PARAMETER theta = 90             //theta
+PARAMETER Dtheta = 15            //amplituda kata
+
+PARAMETER wzorA = 100					// parametr A wzoru
+PARAMETER wzorB = 10					// parametr B wzoru
+
+PARAMETER theta1 = theta*pi/180           // 1,57
+PARAMETER Dtheta1 = Dtheta*pi/180   	  // 1,05
+
+PARAMETER RP = 0.02						//wspó³czynnik losowoœci
+PARAMETER BB = (((3*volumen)^(1/3))/2)
+
+
+parameter srednie_theta_top=0
+parameter srednie_theta_bottom=0
+parameter theta_max=0
+parameter theta_min=0
+
+#define T -cos((sin(abs(x+wzorB)^(1/2)*wzorA))/abs(sin(abs(x+wzorB)^(1/2)*wzorA))*Dtheta1+theta1)
+
+
+constraint 1
+formula: x3 = 0
+energy:  // for contact angle
+e1: -T*y
+e2: 0
+e3: 0
+
+
+vertices
+1   -BB  -BB 0.0  constraint 1  /* 4 vertices on plane */
+2    BB  -BB 0.0  constraint 1
+3    BB   BB 0.0  constraint 1
+4   -BB   BB 0.0  constraint 1
+5   0.0  0.0 2*BB 
+6   AAx  AAy 0.0  fixed   /* for table top */
+7  AAx -AAy 0.0  fixed
+8 -AAx -AAy 0.0  fixed
+9 -AAx  AAy 0.0  fixed 
+
+edges  /* given by endpoints and attribute */
+1   1 2    constraint 1 /* 4 edges on plane */
+2   2 3    constraint 1
+3   3 4    constraint 1
+4   4 1    constraint 1
+5   1 5
+6   2 5  
+7   3 5 
+8   4 5
+9  6 7   fixed no_refine color red /* for table top */
+10 7 8   fixed no_refine
+11 8 9   fixed no_refine
+12 9 6  fixed no_refine
+
+faces  /* given by oriented edge loop */
+1   1 6 -5 tension gamma
+2   2 7 -6 tension gamma
+3   3 8 -7 tension gamma
+4   4 5 -8 tension gamma
+//5  13 14 15  16  density 0 fixed no_refine /* table top for display */
+
+bodies  /* one body, defined by its oriented faces */
+1   1 2 3 4   volume volumen density 1
+
+read
+
+quiet
+numer_kroku := 0;
+meanX := 0;
+izotropowosc := 0;
+nazwa_pliku := sprintf "th%dd%d.txt",theta,Dtheta;
+
+read "random.cm_"
+
+//cykl inicjuj¹cy
+init := {
+check_increase off;
+re := {refine edges where on_constraint 1 };
+g 20; r; g 20; V 1; u 1; 
+g 100;
+re;
+g 100;
+r;
+};
+
+//cykle symulacji
+cykl2:= {
+V 2; g 20; u 2; g 50; 
+}
+
+cykl:= {
+g50; jiggle1; g50; u 1; V 1;
+}
+
+
+zapis:= {
+	    
+		numer_kroku:=numer_kroku+1;
+		pressure1:=body[1].pressure;
+		radius:=2*gamma/pressure1;
+	   
+		// obliczenie polozenia kropli i indeksów skrajnych punktów na osi x
+		sumaPolozeniaX := 0;
+		ilosc_punktow:=0;
+		foreach vertex punkt where on_constraint 1 do {
+            sumaPolozeniaX := sumaPolozeniaX + punkt.x;
+			ilosc_punktow++;
+			};   
+		meanX:=sumaPolozeniaX/ilosc_punktow; 
+	   
+		//obliczenie izotropowosci
+		maxY:=-1000;
+		maxX:=-1000;
+		minY:= 1000;
+		minX:= 1000;
+		foreach vertex punkt where on_constraint 1 do {
+            if punkt.y>maxY then maxY:=punkt.y;   
+            if punkt.y<minY then minY:=punkt.y;  
+			if punkt.x>maxX then maxX:=punkt.x;
+			if punkt.x<minX then minX:=punkt.x;
+			};
+		izotropowosc:=(maxX-minX)/(maxY-minY);
+	   
+		//obiczenie theta 1
+		read "theta-1.cm_";
+		
+		//obliczenie theta 2
+		read "theta-2.cm_";	   
+		
+		//obliczenie theta dla trójk¹tów z czo³owej po³owy kropli
+		read "theta-top-bottom.cm_";
+		
+		//obliczenie theta dla trójk¹tów z czo³owej po³owy kropli
+		read "theta-half-top.cm_";	
+		
+		//obliczenie theta dla trójk¹tów z czo³owej po³owy kropli
+		read "theta-half-bottom.cm_";	
+		printf "%g  %f  %f\n", numer_kroku,meanX,body[1].volume;
+		
+		//zapisywanie do pliku: 					Numer kroku|Energia kropli|Ciœnienie|Promieñ|Po³o¿enie wzglêdem pocz¹tku|Polozenie punktu z tylu|Polozenie punktu z przodu|Theta_top|Theta_bottom|Izotrpowosc
+		printf "%g %f %f %f %f %f %f %f %f %f %f\n", numer_kroku,total_energy,pressure1,radius,meanX,minX,maxX,body[1].volume,theta_max,theta_min,izotropowosc >> nazwa_pliku;	
+		};
+	   
+run := {
+	body[1].target:=body[1].target+(volumen/100);
+	cykl 1;
+	zapis;
+}
+
+init 1;
+m RP;
+s
+q
+
+run 5000;
+
+//wyrysowanie struktury powierzchni (zawsze po symulacji)
+read "powierzchnia.pow";
+
+
+

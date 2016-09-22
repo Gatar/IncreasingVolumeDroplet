@@ -1,0 +1,12 @@
+for(inx:= -AAx; inx < AAx; inx+=0.0001) {
+			local wsk;
+			wsk:=sin((abs(inx+wzorB)^(1/2)*wzorA))/abs(sin(abs(inx+wzorB)^(1/2)*wzorA));
+			if(wsk == 1) then {
+				point1 := new_vertex(inx,-AAy,0);
+				point2 := new_vertex(inx,AAy,0);
+				edge1 := new_edge(point1,point2);
+				set edge[edge1] color red;
+				set edge[edge1] fixed;
+				set edge[edge1]	no_refine;
+			};
+		};

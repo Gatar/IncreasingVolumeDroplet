@@ -1,0 +1,50 @@
+theta1a:=0;
+theta2a:=0;
+x_kraw1:=0;
+x_kraw2:=0;
+index_max := 0;
+index_max := 0;
+maxX := -100;
+minX := 100;
+
+//obliczenie indeksow punktow skrajnych wzgledem osi x
+foreach vertex ver where on_constraint 1 do{
+	if ver.x < minX then {
+		minX := ver.x;
+		index_min := ver.id;
+	};
+	if ver.x > maxX then {
+		maxX := ver.x;
+		index_max := ver.id;
+	};
+};
+
+
+//wyznaczenie theta dla najwyżej położonego trójkąta
+foreach edge kraw where on_constraint 1 AND kraw.vertex[1].id = index_max do {
+	theta1a:= (acos(kraw.facet[1].z / kraw.facet[1].area)*180/pi);
+	x_kraw1:=kraw.vertex[2].x;
+	kraw.facet[1].color := green;
+}
+foreach edge kraw where on_constraint 1 AND kraw.vertex[2].id = index_max do {
+	theta2a:= (acos(kraw.facet[1].z / kraw.facet[1].area)*180/pi);
+	x_kraw1:=kraw.vertex[1].x;
+	kraw.facet[1].color := green;
+}
+if x_kraw1 > x_kraw2 then theta_max := theta1a else theta_max := theta2a;
+
+
+//wyznaczenie theta dla najniżej położonego trójkąta
+foreach edge kraw where on_constraint 1 AND kraw.vertex[1].id = index_min do {
+	theta1a:= (acos(kraw.facet[1].z / kraw.facet[1].area)*180/pi);
+	x_kraw1:=kraw.vertex[2].x;
+	kraw.facet[1].color := red;
+}
+foreach edge kraw where on_constraint 1 AND kraw.vertex[2].id = index_min do {
+	theta2a:= (acos(kraw.facet[1].z / kraw.facet[1].area)*180/pi);
+	x_kraw1:=kraw.vertex[1].x;
+	kraw.facet[1].color := red;
+}
+if x_kraw1 > x_kraw2 then theta_min := theta1a else theta_min := theta2a;
+
+

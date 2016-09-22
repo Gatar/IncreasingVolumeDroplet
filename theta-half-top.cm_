@@ -1,0 +1,92 @@
+max1:=1000;
+max2:=0;
+min1:=-1000;
+define ids real[max1][2];
+define edg real[max1][3];
+define edg1 real[max1][6];		//1-edge.id; 2,3-edge.vertexy; 4-odleglosc od poczatku ukladu; 5-dlugosc edge; 6-wartość z/area dla facet
+ee:=0;
+ee1:=0;
+ee2:=0;
+spr:=0;
+ii:=0;
+yy:=0;
+theta_wazone:=0;
+SUMAyy:=0;
+start:=0;
+ilosc_edge:=0;
+SUMA_dlugosci:=0;
+LICZNIK := 0;
+MIANOWNIK := 0;
+
+//wyznaczenie linii podziału jako 1/2 kropli po jednej ze stron jej osi symetrii y
+foreach vertex vert where not fixed do {
+				SUMAyy:=SUMAyy + vert.x1;
+				yy++;
+				};	
+
+				
+//stworzenie listy edgesów
+foreach edge ED where ED.vertex[1] on_constraint 1 AND ED.vertex[2] on_constraint 1 AND ED.vertex[1].x1 > (SUMAyy/yy) AND ED.vertex[2].x1 > (SUMAyy/yy) AND not fixed  do
+	{ ee++;
+	edg[ee][1] := ED.id;
+	edg[ee][2] := ED.vertex[1].id;
+	edg[ee][3] := ED.vertex[2].id;
+	set ED color green;
+	};
+
+	
+//ile jest edge
+for (ii:=1;ii<max1;ii++){if edg[max1-ii][1]==0 then ilosc_edge:=max1-ii;};	
+	
+
+
+
+// znalezienie początkowego edge
+for (ee:=1;ee<ilosc_edge;ee++) { 				
+spr:=edg[ee][2];
+	for (ee1:=1; ee1<ilosc_edge;ee1++) { 
+	if(spr == edg[ee1][3]) then spr := 0;
+	};
+	if (spr != 0) then start := ee;
+};
+
+
+
+//sortowanie wg kolejności edge
+for	(ee:=1;ee<4;ee++) edg1[1][ee] := edg[start][ee];			
+									
+for (ee:=1;ee<ilosc_edge;ee++) { 				
+	for (ee1:=1; ee1<ilosc_edge;ee1++) { 
+	if(edg1[ee][3] == edg[ee1][2]) then {
+		for	(ee2:=1;ee2<4;ee2++) edg1[ee+1][ee2] := edg[ee1][ee2];
+		}
+	};
+};
+	
+
+	
+	
+//liczenie odleglosci edge pomiedzy vertexami i ich sumowanie
+for (ee:=1; ee<ilosc_edge;ee++) {						
+	edg1[ee][5]:=sqrt((vertex[edg1[ee][2]].x-vertex[edg1[ee][3]].x)^2+(vertex[edg1[ee][2]].y-vertex[edg1[ee][3]].y)^2+(vertex[edg1[ee][2]].y-vertex[edg1[ee][3]].y)^2);
+	SUMA_dlugosci := SUMA_dlugosci + edg1[ee][5];
+	edg1[ee][4] := SUMA_dlugosci;
+	}
+	
+	
+//obliczenie wartości theta
+for (ee:=1; ee<ilosc_edge;ee++) { 
+        edg1[ee][6] := edge[edg1[ee][1]].facet[1].z / edge[edg1[ee][1]].facet[1].area;
+		//set edge[edg1[ee][1]].facet[1] color LIGHTCYAN;
+	}
+
+
+
+// obliczanie średniej ważonej theta
+	
+for (ee:=1; ee<ilosc_edge; ee++) {
+	LICZNIK := LICZNIK + edg1[ee][6]*edg1[ee][5];
+	MIANOWNIK := MIANOWNIK + edg1[ee][5];
+	}
+theta_wazone := LICZNIK/MIANOWNIK;
+srednie_theta_top :=(acos(theta_wazone)*180/pi);

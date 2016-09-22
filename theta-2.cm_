@@ -1,0 +1,101 @@
+max1:=1000;
+max2:=0;
+min1:=-1000;
+define edg real[max1][3];
+define edg1 real[max1][6];		//1-edge.id; 2,3-edge.vertexy; 4-odleglosc od poczatku ukladu; 5-dlugosc edge; 6-wartość z/area dla facet
+define fac real [max1][2];		//1-face.id; 2-theta
+ee:=0;
+ee1:=0;
+ee2:=0;
+spr:=0;
+ii:=0;
+yy:=0;
+ff:=0;
+theta_srednie:=0;
+SUMAyy:=0;
+start:=0;
+ilosc_face:=1;
+ilosc_edge:=0;
+
+
+
+//wyznaczenie linii podziału jako 1/2 kropli po jednej ze stron jej osi symetrii y
+foreach vertex vert where not fixed do {
+				SUMAyy:=SUMAyy + vert.x2;
+				yy++;
+				};	
+
+				
+//stworzenie listy edgesów
+foreach edge ED where ED.vertex[1] on_constraint 1 AND ED.vertex[2] on_constraint 1 AND ED.vertex[1].x2 > (SUMAyy/yy) AND ED.vertex[2].x2 > (SUMAyy/yy) AND not fixed  do
+	{ ee++;
+	edg[ee][1] := ED.id;
+	edg[ee][2] := ED.vertex[1].id;
+	edg[ee][3] := ED.vertex[2].id;
+	//set ED color red;
+	};
+	
+	
+//ile jest edge
+for (ii:=1;ii<max1;ii++){if edg[max1-ii][1]==0 then ilosc_edge:=max1-ii;};	
+	
+
+
+
+// znalezienie początkowego edge
+for (ee:=1;ee<ilosc_edge;ee++) { 				
+spr:=edg[ee][2];
+	for (ee1:=1; ee1<ilosc_edge;ee1++) { 
+	if(spr == edg[ee1][3]) then spr := 0;
+	};
+	if (spr != 0) then start := ee;
+};
+
+
+
+//sortowanie wg kolejności edge
+for	(ee:=1;ee<4;ee++) edg1[1][ee] := edg[start][ee];			
+									
+for (ee:=1;ee<ilosc_edge;ee++) { 				
+	for (ee1:=1; ee1<ilosc_edge;ee1++) { 
+	if(edg1[ee][3] == edg[ee1][2]) then {
+		for	(ee2:=1;ee2<4;ee2++) edg1[ee+1][ee2] := edg[ee1][ee2];
+		}
+	};
+};
+	
+ 
+	
+//obliczenie katow theta dla face typu 2
+for (ff:=1; ff<ilosc_edge;ff++) {
+	foreach	facet F1 where F1.vertex[1].id == edg1[ff][2] OR F1.vertex[2].id == edg1[ff][2] OR F1.vertex[3].id == edg1[ff][2] do {
+		foreach facet F2 where F2.edge[1] valence != 1 AND F2.edge[2] valence != 1 AND F2.edge[3] valence != 1 do {
+			if (F1.id==F2.id) then fac[ilosc_face][1] := F2.id;
+			if (F1.id==F2.id) then fac[ilosc_face][2] := (F2.z / F1.area);
+			//if (F1.id==F2.id) then set F2 color green;
+			if (F1.id==F2.id) then ilosc_face++;
+		}
+	}
+}
+foreach	facet F1 where F1.vertex[1].id == edg1[ilosc_edge-1][3] OR F1.vertex[3].id == edg1[ilosc_edge-1][3] OR F1.vertex[3].id == edg1[ilosc_edge-1][3] do {
+		foreach facet F2 where F2.edge[1] valence != 1 AND F2.edge[2] valence != 1 AND F2.edge[3] valence != 1 do {
+			if (F1.id==F2.id) then fac[ilosc_face][1] := F2.id;
+			if (F1.id==F2.id) then fac[ilosc_face][2] := (F2.z / F1.area);
+			//if (F1.id==F2.id) then set F2 color green;
+		}
+	}
+
+//obl średniego kata theta
+
+for (ff:=1; ff<ilosc_face+1;ff++)	theta_srednie := theta_srednie + fac[ff][2];
+srednie_theta_2 := (acos(theta_srednie/(ilosc_face))*(180/pi));
+
+	
+	
+	
+	
+	
+	
+	
+	
+	

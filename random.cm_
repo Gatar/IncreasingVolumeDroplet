@@ -1,0 +1,18 @@
+//generowanie nowego, unikalnego random_seed
+cc2:=cpu_counter/10000;
+cc1:=floor((cc2-floor(cc2))*10000);
+random_seed:=cc1;
+
+procedure new_coord()
+{
+    xw:=RP*(random-0.5);
+    return;          
+} 
+     
+jiggle1:=
+{
+	foreach vertex vvT where not fixed do {
+		new_coord();
+		vvT.x:=vvT.x+xw; 
+	}
+}     
